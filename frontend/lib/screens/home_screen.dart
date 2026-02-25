@@ -213,31 +213,38 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Dashboard',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.inversePrimary,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(25),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Welcome back! Here\'s your productivity overview.',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey[600],
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.home, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Text(
+            'Dashboard',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Last updated: ${DateTime.now().toString().substring(0, 19)}',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[500],
+          const Spacer(),
+          Text(
+            '${_todoStats.length + _noteStats.length}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
