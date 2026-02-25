@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _todoStats = [];
   List<Map<String, dynamic>> _noteStats = [];
+  List<Map<String, dynamic>> _recentActivities = [];
   bool _isLoading = true;
   String? _error;
 
@@ -39,35 +40,86 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      // Load todos and notes to calculate stats
       final todos = await ApiService.getTodos();
       final notes = await NotesApiService.getNotes();
 
       final completedTodos = todos.where((todo) => todo.completed).length;
       final inProgressTodos = todos.where((todo) => !todo.completed).length;
-      
-      // Calculate note stats (you can expand this with more categories)
-      final totalNotes = notes.length;
+
       final recentNotes = notes.where((note) {
-        return DateTime.now().difference(note.updatedAt).inDays <= 7;
+        return DateTime.now().difference(note.createdAt).inDays <= 7;
       }).length;
 
       setState(() {
         _todoStats = [
-          {'title': 'Completed', 'count': completedTodos, 'color': Colors.green, 'icon': Icons.check_circle},
-          {'title': 'In Progress', 'count': inProgressTodos, 'color': Colors.blue, 'icon': Icons.pending},
+          {
+            'title': 'Completed',
+            'count': completedTodos,
+            'icon': Icons.check_circle,
+            'color': Colors.green,
+          },
+          {
+            'title': 'In Progress',
+            'count': inProgressTodos,
+            'icon': Icons.pending,
+            'color': Colors.orange,
+          },
         ];
-        
+
         _noteStats = [
-          {'title': 'Total Notes', 'count': totalNotes, 'color': Colors.purple, 'icon': Icons.note},
-          {'title': 'Recent Notes', 'count': recentNotes, 'color': Colors.orange, 'icon': Icons.update},
+          {
+            'title': 'Total Notes',
+            'count': notes.length,
+            'icon': Icons.note,
+            'color': Colors.purple,
+          },
+          {
+            'title': 'Recent Notes',
+            'count': recentNotes,
+            'color': Colors.blue,
+            'icon': Icons.update,
+          }
         ];
+
+        // Create recent activities list
+        _recentActivities = [];
         
+        // Add recent todos (last 3)
+        for (var todo in todos.take(3)) {
+          _recentActivities.add({
+            'type': 'todo',
+            'title': todo.title,
+            'description': todo.description,
+            'completed': todo.completed,
+            'createdAt': DateTime.now(), // Use current time since todos don't have createdAt
+            'icon': todo.completed ? Icons.check_circle : Icons.pending,
+            'color': todo.completed ? Colors.green : Colors.orange,
+          });
+        }
+
+        // Add recent notes (last 2)
+        for (var note in notes.take(2)) {
+          _recentActivities.add({
+            'type': 'note',
+            'title': note.title,
+            'description': note.content,
+            'createdAt': note.createdAt,
+            'icon': Icons.note,
+            'color': Colors.purple,
+          });
+        }
+
+        // Sort by creation date (most recent first)
+        _recentActivities.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
+        
+        // Take only the 5 most recent activities
+        _recentActivities = _recentActivities.take(5).toList();
+
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = 'Failed to load data: $e';
         _isLoading = false;
       });
     }
@@ -385,6 +437,42 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentActivity() {
+    if (_recentActivities.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent Activity',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.history, color: Colors.grey[600]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No recent activity yet',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -397,26 +485,119 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey[200]!),
           ),
-          child: Row(
-            children: [
-              Icon(Icons.history, color: Colors.grey[600]),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Your recent activity will appear here',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-            ],
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _recentActivities.length,
+            separatorBuilder: (context, index) => Divider(
+              height: 1,
+              color: Colors.grey[200],
+              indent: 16,
+              endIndent: 16,
+            ),
+            itemBuilder: (context, index) {
+              final activity = _recentActivities[index];
+              return _buildActivityItem(activity);
+            },
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildActivityItem(Map<String, dynamic> activity) {
+    final String type = activity['type'];
+    final String title = activity['title'];
+    final String description = activity['description'] ?? '';
+    final IconData icon = activity['icon'];
+    final Color color = activity['color'];
+    final DateTime createdAt = activity['createdAt'];
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (description.isNotEmpty)
+            Text(
+              description,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(createdAt),
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: type == 'todo' 
+              ? Colors.blue.withValues(alpha: 0.1)
+              : Colors.purple.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          type == 'todo' ? 'Todo' : 'Note',
+          style: TextStyle(
+            color: type == 'todo' ? Colors.blue : Colors.purple,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        if (difference.inMinutes == 0) {
+          return 'Just now';
+        }
+        return '${difference.inMinutes}m ago';
+      }
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }
