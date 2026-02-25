@@ -120,6 +120,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return Scaffold(
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'todo_fab_unique',
         onPressed: _addTodo,
         tooltip: 'Add Todo',
         child: const Icon(Icons.add),

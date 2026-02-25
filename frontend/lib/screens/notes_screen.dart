@@ -123,6 +123,7 @@ class _NotesScreenState extends State<NotesScreen> {
     return Scaffold(
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'notes_fab_unique',
         onPressed: _addNote,
         tooltip: 'Add Note',
         child: const Icon(Icons.add),
