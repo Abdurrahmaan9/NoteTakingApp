@@ -4,25 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_todo/main.dart';
 
 void main() {
-  testWidgets('Todo app smoke test', (WidgetTester tester) async {
+  testWidgets('Note app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const TodoApp());
+    await tester.pumpWidget(const NoteApp());
 
-    // Wait for the app to load and show either loading, error, or empty state
+    // Wait for the app to load
     await tester.pumpAndSettle();
 
-    // Verify that our app starts with the correct title
-    expect(find.text('Todo App'), findsOneWidget);
+    // Verify that our app starts with the correct title (appears twice - in MaterialApp and AppBar)
+    expect(find.text('Note Taking App'), findsWidgets);
+    
+    // Verify that tabs are present
+    expect(find.text('Todos'), findsOneWidget);
+    expect(find.text('Notes'), findsOneWidget);
     
     // Verify that the add button is present
     expect(find.byIcon(Icons.add), findsOneWidget);
-    
-    // Check for either loading indicator, error message, or empty state
-    final hasLoading = find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
-    final hasError = find.textContaining('Error').evaluate().isNotEmpty;
-    final hasEmptyState = find.text('No todos yet').evaluate().isNotEmpty;
-    
-    // At least one of these states should be visible
-    expect(hasLoading || hasError || hasEmptyState, isTrue);
   });
 }

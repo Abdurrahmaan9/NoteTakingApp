@@ -118,10 +118,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Todo App'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
+      // appBar: AppBar(
+      //   // title: const Text('Note Taking App'),
+      //   backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      // ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _addTodo,

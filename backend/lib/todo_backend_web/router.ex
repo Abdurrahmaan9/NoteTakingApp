@@ -25,6 +25,7 @@ defmodule TodoBackendWeb.Router do
     pipe_through :api
 
     resources "/items", ItemController, except: [:new, :edit]
+    resources "/notes", NoteController, except: [:new, :edit]
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
