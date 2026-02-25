@@ -118,10 +118,6 @@ class _TodoListScreenState extends State<TodoListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   // title: const Text('Note Taking App'),
-      //   backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      // ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: _addTodo,
@@ -132,6 +128,51 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Widget _buildBody() {
+    return Column(
+      children: [
+        // Custom Header
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.inversePrimary,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(25),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              Text(
+                'Todos',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_todos.where((todo) => todo.completed).length}/${_todos.length}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Content
+        Expanded(
+          child: _buildContent(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
