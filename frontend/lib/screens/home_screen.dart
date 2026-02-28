@@ -10,11 +10,7 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToTodos;
   final VoidCallback? onNavigateToNotes;
 
-  const HomeScreen({
-    super.key,
-    this.onNavigateToTodos,
-    this.onNavigateToNotes,
-  });
+  const HomeScreen({super.key, this.onNavigateToTodos, this.onNavigateToNotes});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -78,12 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
             'count': recentNotes,
             'color': Colors.blue,
             'icon': Icons.update,
-          }
+          },
         ];
 
         // Create recent activities list
         _recentActivities = [];
-        
+
         // Add recent todos (last 3)
         for (var todo in todos.take(3)) {
           _recentActivities.add({
@@ -91,7 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
             'title': todo.title,
             'description': todo.description,
             'completed': todo.completed,
-            'createdAt': DateTime.now(), // Use current time since todos don't have createdAt
+            'createdAt':
+                DateTime.now(), // Use current time since todos don't have createdAt
             'icon': todo.completed ? Icons.check_circle : Icons.pending,
             'color': todo.completed ? Colors.green : Colors.orange,
           });
@@ -110,8 +107,10 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         // Sort by creation date (most recent first)
-        _recentActivities.sort((a, b) => b['createdAt'].compareTo(a['createdAt']));
-        
+        _recentActivities.sort(
+          (a, b) => b['createdAt'].compareTo(a['createdAt']),
+        );
+
         // Take only the 5 most recent activities
         _recentActivities = _recentActivities.take(5).toList();
 
@@ -127,16 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _buildBody(),
-    );
+    return Scaffold(body: _buildBody());
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
@@ -178,34 +173,33 @@ class _HomeScreenState extends State<HomeScreen> {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(
-          left: 16.0,
-          right: 16.0,
-          top: 16.0,
-          bottom: 100.0, // Add padding for bottom navigation
+          left: 20.0,
+          right: 20.0,
+          top: 24.0,
+          bottom: 120.0, // Add padding for bottom navigation
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             _buildHeader(),
-            const SizedBox(height: 24),
-            
+            const SizedBox(height: 32),
+
             // Todo Stats Section
             _buildStatsSection('Todo Summary', _todoStats),
-            const SizedBox(height: 24),
-            
+            const SizedBox(height: 32),
+
             // Note Stats Section
             _buildStatsSection('Note Summary', _noteStats),
-            const SizedBox(height: 24),
-            
+            const SizedBox(height: 32),
+
             // Quick Actions
             _buildQuickActions(),
-            const SizedBox(height: 24),
-            
+            const SizedBox(height: 32),
+
             // Recent Activity
             _buildRecentActivity(),
-            const SizedBox(height: 24), // Add extra padding at the bottom
+            const SizedBox(height: 32), // Add extra padding at the bottom
           ],
         ),
       ),
@@ -216,31 +210,78 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.inversePrimary,
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(25),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(Icons.home, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
-          Text(
-            'Dashboard',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.home,
               color: Theme.of(context).colorScheme.primary,
+              size: 24,
             ),
           ),
-          const Spacer(),
-          Text(
-            '${_todoStats.length + _noteStats.length}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dashboard',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Welcome back! Here\'s your productivity overview.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${_todoStats.length + _noteStats.length}',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -256,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -267,67 +308,72 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisCount: 2,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
-            childAspectRatio: 1.0, // Increased from 1.2 to give more height
+            childAspectRatio: 1.4,
           ),
           itemCount: stats.length,
           itemBuilder: (context, index) {
             final stat = stats[index];
-            return _buildStatCard(stat);
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    stat['color'].withValues(alpha: 0.1),
+                    stat['color'].withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: stat['color'].withValues(alpha: 0.2),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: stat['color'].withValues(alpha: 0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: stat['color'].withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(stat['icon'], color: stat['color'], size: 24),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${stat['count']}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: stat['color'],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    stat['title'],
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildStatCard(Map<String, dynamic> stat) {
-    return Container(
-      decoration: BoxDecoration(
-        color: (stat['color'] as Color).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: (stat['color'] as Color).withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0), // Reduced padding
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Prevent overflow
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6), // Reduced padding
-              decoration: BoxDecoration(
-                color: stat['color'] as Color,
-                borderRadius: BorderRadius.circular(6), // Reduced border radius
-              ),
-              child: Icon(
-                stat['icon'] as IconData,
-                color: Colors.white,
-                size: 16, // Reduced icon size
-              ),
-            ),
-            const SizedBox(height: 8), // Reduced spacing
-            Text(
-              '${stat['count']}',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith( // Smaller text style
-                fontWeight: FontWeight.bold,
-                color: stat['color'] as Color,
-              ),
-            ),
-            const SizedBox(height: 2), // Reduced spacing
-            Text(
-              stat['title'] as String,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith( // Smaller text style
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -339,35 +385,43 @@ class _HomeScreenState extends State<HomeScreen> {
           'Quick Actions',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
-              child: _buildActionButton(
+              child: _buildQuickActionCard(
                 'Add Todo',
-                Icons.add_task,
+                Icons.add_task_rounded,
                 Colors.blue,
                 () async {
                   final result = await Navigator.of(context).push<Todo>(
-                    MaterialPageRoute(builder: (context) => const AddTodoScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const AddTodoScreen(),
+                    ),
                   );
-                  
+
                   if (result != null) {
                     try {
                       await ApiService.createTodo(result);
-                      _loadStats(); // Refresh stats after adding
                       if (mounted) {
+                        _loadStats();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Todo added successfully!')),
+                          const SnackBar(
+                            content: Text('Todo added successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
                         );
                       }
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error adding todo: $e')),
+                          SnackBar(
+                            content: Text('Error adding todo: $e'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
                       }
                     }
@@ -377,28 +431,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildActionButton(
+              child: _buildQuickActionCard(
                 'Add Note',
-                Icons.note_add,
+                Icons.note_add_rounded,
                 Colors.purple,
                 () async {
                   final result = await Navigator.of(context).push<Note>(
-                    MaterialPageRoute(builder: (context) => const AddNoteScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const AddNoteScreen(),
+                    ),
                   );
-                  
+
                   if (result != null) {
                     try {
                       await NotesApiService.createNote(result);
-                      _loadStats(); // Refresh stats after adding
                       if (mounted) {
+                        _loadStats();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Note added successfully!')),
+                          const SnackBar(
+                            content: Text('Note added successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
                         );
                       }
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error adding note: $e')),
+                          SnackBar(
+                            content: Text('Error adding note: $e'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
                       }
                     }
@@ -412,29 +474,52 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
+  Widget _buildQuickActionCard(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.2),
-            width: 1,
+          gradient: LinearGradient(
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+              spreadRadius: 0,
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
             Text(
               title,
-              style: TextStyle(
-                color: color,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
           ],
@@ -444,146 +529,191 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentActivity() {
-    if (_recentActivities.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent Activity',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.history, color: Colors.grey[600]),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'No recent activity yet',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recent Activity',
+          'Recent Activities',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _recentActivities.length,
-            separatorBuilder: (context, index) => Divider(
-              height: 1,
-              color: Colors.grey[200],
-              indent: 16,
-              endIndent: 16,
+        if (_recentActivities.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
+                  Theme.of(context).colorScheme.surface,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
-            itemBuilder: (context, index) {
-              final activity = _recentActivities[index];
-              return _buildActivityItem(activity);
-            },
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    Icons.history_rounded,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No recent activity yet',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start adding todos and notes to see your activity here',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.shadow.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _recentActivities.length,
+              separatorBuilder: (context, index) => Divider(
+                height: 1,
+                indent: 20,
+                endIndent: 20,
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.1),
+              ),
+              itemBuilder: (context, index) {
+                final activity = _recentActivities[index];
+                return _buildActivityItem(activity);
+              },
+            ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildActivityItem(Map<String, dynamic> activity) {
-    final String type = activity['type'];
-    final String title = activity['title'];
-    final String description = activity['description'] ?? '';
-    final IconData icon = activity['icon'];
-    final Color color = activity['color'];
-    final DateTime createdAt = activity['createdAt'];
+    final isTodo = activity['type'] == 'todo';
+    final color = activity['color'] as Color;
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(icon, color: color, size: 20),
+        child: Icon(activity['icon'] as IconData, color: color, size: 22),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: Row(
         children: [
-          if (description.isNotEmpty)
-            Text(
-              description,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
+          Expanded(
+            child: Text(
+              activity['title'] as String,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-          const SizedBox(height: 4),
-          Text(
-            _formatDate(createdAt),
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 11,
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              isTodo ? 'Todo' : 'Note',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: type == 'todo' 
-              ? Colors.blue.withValues(alpha: 0.1)
-              : Colors.purple.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          type == 'todo' ? 'Todo' : 'Note',
-          style: TextStyle(
-            color: type == 'todo' ? Colors.blue : Colors.purple,
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activity['description'] != null &&
+              (activity['description'] as String).isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              activity['description'] as String,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(activity['createdAt'] as DateTime),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
-        ),
+        ],
       ),
+      onTap: () {
+        // Optional: Add navigation to item details
+      },
     );
   }
 
