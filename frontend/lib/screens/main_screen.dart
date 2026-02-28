@@ -117,14 +117,14 @@ class _MainScreenState extends State<MainScreen> {
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: isSelected
-              ? theme.primaryColor.withValues(alpha: 0.15)
+              ? theme.colorScheme.primary.withValues(alpha: 0.15)
               : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
           color: isSelected
-              ? theme.primaryColor
+              ? theme.colorScheme.primary
               : theme.colorScheme.onSurface.withValues(alpha: 0.6),
           size: 24,
         ),

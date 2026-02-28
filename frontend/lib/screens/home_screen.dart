@@ -306,15 +306,15 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.4,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
           ),
           itemCount: stats.length,
           itemBuilder: (context, index) {
             final stat = stats[index];
             return Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -350,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Icon(stat['icon'], color: stat['color'], size: 24),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     '${stat['count']}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
