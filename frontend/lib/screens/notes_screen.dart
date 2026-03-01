@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/notes_api_service.dart';
 import 'add_note_screen.dart';
 import 'edit_note_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class NotesScreen extends StatefulWidget {
   const NotesScreen({super.key});
@@ -71,9 +73,9 @@ class _NotesScreenState extends State<NotesScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting note: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
         }
       }
     }
@@ -81,19 +83,11 @@ class _NotesScreenState extends State<NotesScreen> {
 
   Future<void> _editNote(Note note) async {
     final result = await Navigator.of(context).push<dynamic>(
-      MaterialPageRoute(
-        builder: (context) => EditNoteScreen(note: note),
-      ),
+      MaterialPageRoute(builder: (context) => EditNoteScreen(note: note)),
     );
 
     if (result != null) {
-      if (result == 'deleted') {
-        // Note was deleted, just refresh the list
-        _loadNotes();
-      } else if (result is Note) {
-        // Note was updated, refresh the list
-        _loadNotes();
-      }
+      _loadNotes();
     }
   }
 
@@ -110,9 +104,9 @@ class _NotesScreenState extends State<NotesScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error creating note: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error creating note: $e')));
         }
       }
     }
@@ -132,46 +126,71 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
     return Column(
       children: [
         // Custom Header
         Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.inversePrimary,
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.1),
+                theme.colorScheme.secondary.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(25),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+                color: theme.colorScheme.shadow.withOpacity(0.05),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
-          child: Row(
-            children: [
-              Icon(Icons.note, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12),
-              Text(
-                'Notes',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                Icon(Icons.notes_rounded, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Text(
+                  'Notes',
+                  style: GoogleFonts.ubuntu(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Text(
-                '${_notes.length}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_notes.length}',
+                    style: GoogleFonts.ubuntu(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         // Content
-        Expanded(
-          child: _buildContent(),
-        ),
+        Expanded(child: _buildContent()),
       ],
     );
   }
@@ -193,10 +212,7 @@ class _NotesScreenState extends State<NotesScreen> {
             const SizedBox(height: 16),
             Text(_error!),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadNotes,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _loadNotes, child: const Text('Retry')),
           ],
         ),
       );
@@ -207,31 +223,18 @@ class _NotesScreenState extends State<NotesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.note_outlined,
-                size: 48,
-                color: Colors.grey.shade400,
-              ),
+            Icon(
+              Icons.note_alt_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
             ),
             const SizedBox(height: 16),
             Text(
               'No notes yet',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              style: TextStyle(
                 color: Colors.grey.shade600,
+                fontSize: 18,
                 fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create your first note to get started',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade500,
               ),
             ),
           ],
@@ -241,40 +244,37 @@ class _NotesScreenState extends State<NotesScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadNotes,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8.0,
-            mainAxisSpacing: 8.0,
-            childAspectRatio: 0.7,
-          ),
-          itemCount: _notes.length,
-          itemBuilder: (context, index) {
-            final note = _notes[index];
-            return NoteCard(
-              note: note,
-              onDelete: () => _deleteNote(note),
-              onEdit: () => _editNote(note),
-              color: _getCardColor(index),
-            );
-          },
+      child: GridView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12.0,
+          mainAxisSpacing: 12.0,
+          childAspectRatio: 1.4, // HALVED HEIGHT: Increased from 0.7 to 1.4
         ),
+        itemCount: _notes.length,
+        itemBuilder: (context, index) {
+          final note = _notes[index];
+          return NoteCard(
+            note: note,
+            onDelete: () => _deleteNote(note),
+            onEdit: () => _editNote(note),
+            color: _getCardColor(index),
+          );
+        },
       ),
     );
   }
 
   Color _getCardColor(int index) {
     final colors = [
-      Colors.yellow.shade100,
-      Colors.orange.shade100,
-      Colors.green.shade100,
-      Colors.blue.shade100,
-      Colors.purple.shade100,
-      Colors.pink.shade100,
-      Colors.teal.shade100,
-      Colors.amber.shade100,
+      const Color(0xFFFFF9C4), // Yellow
+      const Color(0xFFFFECB3), // Amber
+      const Color(0xFFC8E6C9), // Green
+      const Color(0xFFBBDEFB), // Blue
+      const Color(0xFFE1BEE7), // Purple
+      const Color(0xFFF8BBD0), // Pink
+      const Color(0xFFB2DFDB), // Teal
     ];
     return colors[index % colors.length];
   }
@@ -298,90 +298,70 @@ class NoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: color,
-      elevation: 2.0,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(16.0),
+        side: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onEdit,
-          borderRadius: BorderRadius.circular(12.0),
-          child: AnimatedScale(
-            scale: 1.0,
-            duration: const Duration(milliseconds: 150),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: InkWell(
+        onTap: onEdit,
+        borderRadius: BorderRadius.circular(16.0),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Title and delete button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          note.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, size: 16),
-                        padding: EdgeInsets.zero,
-                        onSelected: (value) {
-                          if (value == 'delete') {
-                            onDelete();
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, size: 16, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Delete'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Content
                   Expanded(
                     child: Text(
-                      note.content,
+                      note.title,
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.black54,
-                        height: 1.4,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D2D2D),
                       ),
-                      maxLines: 8,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  
-                  // Timestamp
-                  Text(
-                    _formatDate(note.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                  GestureDetector(
+                    onTap: onDelete,
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.black.withOpacity(0.3),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 6),
+              // Content snippet
+              Expanded(
+                child: Text(
+                  note.content,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black.withOpacity(0.6),
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Date
+              Text(
+                _formatDate(note.createdAt),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black.withOpacity(0.4),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -391,7 +371,7 @@ class NoteCard extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         if (difference.inMinutes == 0) {

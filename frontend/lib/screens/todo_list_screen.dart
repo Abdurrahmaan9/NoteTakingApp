@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/todo.dart';
 import '../services/api_service.dart';
 import 'add_todo_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
@@ -50,9 +51,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating todo: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating todo: $e')));
       }
     }
   }
@@ -86,9 +87,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting todo: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting todo: $e')));
         }
       }
     }
@@ -107,9 +108,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error creating todo: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error creating todo: $e')));
         }
       }
     }
@@ -117,58 +118,99 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'todo_fab_unique',
-        onPressed: _addTodo,
-        tooltip: 'Add Todo',
-        child: const Icon(Icons.add),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.primary.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.shadow.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          heroTag: 'todo_fab_unique',
+          onPressed: _addTodo,
+          tooltip: 'Add Todo',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Icon(Icons.add, color: theme.colorScheme.onPrimary, size: 28),
+        ),
       ),
     );
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
     return Column(
       children: [
         // Custom Header
         Container(
           padding: const EdgeInsets.all(16.0),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.inversePrimary,
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withValues(alpha: 0.1),
+                theme.colorScheme.secondary.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(25),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+                color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+                spreadRadius: 0,
               ),
             ],
           ),
           child: Row(
             children: [
-              Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.check_circle, color: theme.colorScheme.primary),
               const SizedBox(width: 12),
               Text(
                 'Todos',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                style: GoogleFonts.ubuntu(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
                 ),
               ),
               const Spacer(),
               Text(
                 '${_todos.where((todo) => todo.completed).length}/${_todos.length}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                style: GoogleFonts.ubuntu(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
           ),
         ),
         // Content
-        Expanded(
-          child: _buildContent(),
-        ),
+        Expanded(child: _buildContent()),
       ],
     );
   }
@@ -190,10 +232,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             const SizedBox(height: 16),
             Text(_error!),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadTodos,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: _loadTodos, child: const Text('Retry')),
           ],
         ),
       );
@@ -204,24 +243,20 @@ class _TodoListScreenState extends State<TodoListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.check_circle_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.check_circle_outline, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'No todos yet',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
               'Tap the + button to add your first todo',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -259,32 +294,192 @@ class TodoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        leading: Checkbox(
-          value: todo.completed,
-          onChanged: (value) => onToggle(),
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            todo.completed
+                ? theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.8,
+                  )
+                : theme.colorScheme.primary.withValues(alpha: 0.1),
+            todo.completed
+                ? theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  )
+                : theme.colorScheme.secondary.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        title: Text(
-          todo.title,
-          style: TextStyle(
-            decoration: todo.completed ? TextDecoration.lineThrough : null,
-            color: todo.completed ? Colors.grey : null,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
+          BoxShadow(
+            color: todo.completed
+                ? Colors.grey.withValues(alpha: 0.2)
+                : theme.colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+        border: Border.all(
+          color: todo.completed
+              ? theme.colorScheme.outline.withValues(alpha: 0.2)
+              : theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
         ),
-        subtitle: todo.description.isNotEmpty
-            ? Text(
-                todo.description,
-                style: TextStyle(
-                  decoration: todo.completed ? TextDecoration.lineThrough : null,
-                  color: todo.completed ? Colors.grey : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {},
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title and checkbox
+                Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: todo.completed
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline.withValues(
+                                  alpha: 0.5,
+                                ),
+                          width: 2,
+                        ),
+                        color: todo.completed
+                            ? theme.colorScheme.primary
+                            : Colors.transparent,
+                      ),
+                      child: todo.completed
+                          ? Icon(
+                              Icons.check,
+                              size: 14,
+                              color: theme.colorScheme.onPrimary,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        todo.title,
+                        style: GoogleFonts.ubuntu(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: todo.completed
+                              ? theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                )
+                              : theme.colorScheme.onSurface,
+                          height: 1.2,
+                          decoration: todo.completed
+                              ? TextDecoration.lineThrough
+                              : null,
+                          decorationColor: todo.completed
+                              ? theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                )
+                              : null,
+                          decorationThickness: 2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            : null,
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
-          onPressed: onDelete,
+                // Description
+                if (todo.description.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    todo.description,
+                    style: GoogleFonts.ubuntu(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: todo.completed
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      height: 1.4,
+                      decoration: todo.completed
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: todo.completed
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                          : null,
+                      decorationThickness: 1.5,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                // Actions and metadata
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: todo.completed
+                            ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                            : theme.colorScheme.tertiary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        todo.completed ? 'Completed' : 'Active',
+                        style: GoogleFonts.ubuntu(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: todo.completed
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.tertiary,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                          size: 16,
+                          color: Colors.red.withValues(alpha: 0.8),
+                        ),
+                        onPressed: onDelete,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

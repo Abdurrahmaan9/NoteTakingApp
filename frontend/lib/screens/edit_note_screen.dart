@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/notes_api_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final Note note;
 
-  const EditNoteScreen({
-    super.key,
-    required this.note,
-  });
+  const EditNoteScreen({super.key, required this.note});
 
   @override
   State<EditNoteScreen> createState() => _EditNoteScreenState();
@@ -26,7 +24,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     super.initState();
     _titleController = TextEditingController(text: widget.note.title);
     _contentController = TextEditingController(text: widget.note.content);
-    
+
     // Listen for changes
     _titleController.addListener(_onChanged);
     _contentController.addListener(_onChanged);
@@ -42,8 +40,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   }
 
   void _onChanged() {
-    final hasChanges = _titleController.text != widget.note.title ||
-                      _contentController.text != widget.note.content;
+    final hasChanges =
+        _titleController.text != widget.note.title ||
+        _contentController.text != widget.note.content;
     if (_hasChanges != hasChanges) {
       setState(() {
         _hasChanges = hasChanges;
@@ -73,15 +72,15 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       );
 
       await NotesApiService.updateNote(updatedNote);
-      
+
       if (mounted) {
         Navigator.of(context).pop(updatedNote);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating note: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating note: $e')));
       }
     } finally {
       if (mounted) {
@@ -97,7 +96,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Note'),
-        content: Text('Are you sure you want to delete "${widget.note.title}"?'),
+        content: Text(
+          'Are you sure you want to delete "${widget.note.title}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -119,9 +120,9 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting note: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
         }
       }
     }
@@ -129,21 +130,42 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Edit Note'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: theme.colorScheme.onSurface,
+        title: Text(
+          'Edit Note',
+          style: GoogleFonts.ubuntu(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         actions: [
           if (_hasChanges)
             TextButton(
               onPressed: _isLoading ? null : _saveNote,
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.primary,
+                      ),
                     )
-                  : const Text('Save'),
+                  : Text(
+                      'Save',
+                      style: GoogleFonts.ubuntu(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
             ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -156,6 +178,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
               const PopupMenuItem(
                 value: 'delete',
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.delete, color: Colors.red),
                     SizedBox(width: 8),
@@ -167,91 +190,154 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'Enter note title',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withValues(alpha: 0.1),
+                theme.colorScheme.secondary.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: 0,
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _contentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Content',
-                    hintText: 'Enter note content',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ],
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Edit note",
+                  style: GoogleFonts.ubuntu(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
                   ),
-                  style: const TextStyle(
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Update your thoughts and ideas.",
+                  style: GoogleFonts.ubuntu(
                     fontSize: 16,
-                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
+                ),
+                const SizedBox(height: 32),
+                TextFormField(
+                  controller: _titleController,
+                  style: GoogleFonts.ubuntu(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'Enter note title',
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    labelStyle: GoogleFonts.ubuntu(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter some content';
+                      return 'Please enter a title';
                     }
                     return null;
                   },
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Last modified: ${_formatDate(widget.note.updatedAt)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 200,
+                  child: TextFormField(
+                    controller: _contentController,
+                    style: GoogleFonts.ubuntu(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      height: 1.5,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Content',
+                      hintText: 'Enter note content',
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        ),
+                      ),
+                      labelStyle: GoogleFonts.ubuntu(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      alignLabelWithHint: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                    ),
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        if (difference.inMinutes == 0) {
-          return 'Just now';
-        }
-        return '${difference.inMinutes} minutes ago';
-      }
-      return '${difference.inHours} hours ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
   }
 }
