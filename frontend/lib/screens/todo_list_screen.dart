@@ -357,30 +357,33 @@ class TodoTile extends StatelessWidget {
                 // Title and checkbox
                 Row(
                   children: [
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
+                    GestureDetector(
+                      onTap: onToggle,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: todo.completed
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outline.withValues(
+                                    alpha: 0.5,
+                                  ),
+                            width: 2,
+                          ),
                           color: todo.completed
                               ? theme.colorScheme.primary
-                              : theme.colorScheme.outline.withValues(
-                                  alpha: 0.5,
-                                ),
-                          width: 2,
+                              : Colors.transparent,
                         ),
-                        color: todo.completed
-                            ? theme.colorScheme.primary
-                            : Colors.transparent,
+                        child: todo.completed
+                            ? Icon(
+                                Icons.check,
+                                size: 14,
+                                color: theme.colorScheme.onPrimary,
+                              )
+                            : null,
                       ),
-                      child: todo.completed
-                          ? Icon(
-                              Icons.check,
-                              size: 14,
-                              color: theme.colorScheme.onPrimary,
-                            )
-                          : null,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
