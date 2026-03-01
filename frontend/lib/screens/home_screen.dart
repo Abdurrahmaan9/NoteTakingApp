@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/notes_api_service.dart';
+import '../services/deleted_items_service.dart';
 import '../models/todo.dart';
 import '../models/note.dart';
 import 'add_todo_screen.dart';
@@ -16,16 +17,60 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Map<String, dynamic>> _todoStats = [];
   List<Map<String, dynamic>> _noteStats = [];
   List<Map<String, dynamic>> _recentActivities = [];
+  List<Map<String, dynamic>> _recentDeleted = [];
   bool _isLoading = true;
   String? _error;
+  bool _isActivitiesExpanded = true;
+  bool _isDeletedExpanded = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _loadStats();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh data when app comes to foreground
+      _refreshRecentActivities();
+      _refreshDeletedItems();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh deleted items when returning to this screen
+    _refreshDeletedItems();
+    // Add a slight delay to ensure navigation is complete
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _refreshRecentActivities();
+      }
+    });
+  }
+
+  void _refreshDeletedItems() {
+    final deletedService = DeletedItemsService();
+    setState(() {
+      _recentDeleted = deletedService.getRecentlyDeleted();
+    });
+  }
+
+  void _refreshRecentActivities() {
+    // Refresh recent activities by reloading stats
     _loadStats();
   }
 
@@ -42,7 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final completedTodos = todos.where((todo) => todo.completed).length;
       final inProgressTodos = todos.where((todo) => !todo.completed).length;
 
-      final recentNotes = notes.where((note) {
+      // Filter notes created in the last 7 days
+      final recentNotesCount = notes.where((note) {
         return DateTime.now().difference(note.createdAt).inDays <= 7;
       }).length;
 
@@ -71,31 +117,38 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           {
             'title': 'Recent Notes',
-            'count': recentNotes,
-            'color': Colors.blue,
+            'count': recentNotesCount,
             'icon': Icons.update,
+            'color': Colors.blue,
           },
         ];
 
-        // Create recent activities list
         _recentActivities = [];
 
-        // Add recent todos (last 3)
-        for (var todo in todos.take(3)) {
+        // FIX 1: Sort Todos by ID descending (assuming higher ID = newer)
+        // or simply reverse the list if the API returns them oldest first.
+        final latestTodos = todos.reversed.take(5).toList();
+
+        for (var todo in latestTodos) {
           _recentActivities.add({
             'type': 'todo',
+            'id': todo.id, // Keep track of ID
             'title': todo.title,
             'description': todo.description,
             'completed': todo.completed,
-            'createdAt':
-                DateTime.now(), // Use current time since todos don't have createdAt
+            // FIX 2: Since Todos have no createdAt, we use a slightly
+            // offset timestamp or just assume they are "now" but sorted correctly later
+            'createdAt': DateTime.now().subtract(const Duration(seconds: 1)),
             'icon': todo.completed ? Icons.check_circle : Icons.pending,
             'color': todo.completed ? Colors.green : Colors.orange,
           });
         }
 
-        // Add recent notes (last 2)
-        for (var note in notes.take(2)) {
+        // FIX 3: Sort Notes by actual createdAt date descending
+        final latestNotes = List<Note>.from(notes);
+        latestNotes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        for (var note in latestNotes.take(5)) {
           _recentActivities.add({
             'type': 'note',
             'title': note.title,
@@ -106,13 +159,23 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
 
-        // Sort by creation date (most recent first)
-        _recentActivities.sort(
-          (a, b) => b['createdAt'].compareTo(a['createdAt']),
-        );
+        // FINAL SORT: Combine and sort the merged list
+        _recentActivities.sort((a, b) {
+          // If it's a Todo vs Todo and they both have 'now' timestamps, sort by ID
+          if (a['type'] == 'todo' &&
+              b['type'] == 'todo' &&
+              a['id'] != null &&
+              b['id'] != null) {
+            return b['id'].compareTo(a['id']);
+          }
+          return b['createdAt'].compareTo(a['createdAt']);
+        });
 
-        // Take only the 5 most recent activities
-        _recentActivities = _recentActivities.take(5).toList();
+        // Keep only the top 6
+        _recentActivities = _recentActivities.take(6).toList();
+
+        final deletedService = DeletedItemsService();
+        _recentDeleted = deletedService.getRecentlyDeleted();
 
         _isLoading = false;
       });
@@ -169,7 +232,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadStats,
+      onRefresh: () async {
+        await _loadStats();
+        // Also refresh deleted items after loading stats
+        _refreshDeletedItems();
+      },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(
@@ -199,6 +266,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Recent Activity
             _buildRecentActivity(),
+            const SizedBox(height: 24),
+
+            // Recently Deleted
+            _buildRecentDeleted(),
             const SizedBox(height: 32), // Add extra padding at the bottom
           ],
         ),
@@ -342,23 +413,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: stat['color'].withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(stat['icon'], color: stat['color'], size: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: stat['color'].withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          stat['icon'],
+                          color: stat['color'],
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                      Text(
+                        '${stat['count']}',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: stat['color'],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${stat['count']}',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: stat['color'],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     stat['title'],
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -532,113 +613,140 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Recent Activities',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_recentActivities.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.surfaceContainerHighest,
-                  Theme.of(context).colorScheme.surface,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
+        // Header with expand/collapse button
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isActivitiesExpanded = !_isActivitiesExpanded;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    Icons.history_rounded,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'No recent activity yet',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  'Recent Activities',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start adding todos and notes to see your activity here',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.1),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
+                const Spacer(),
+                Icon(
+                  _isActivitiesExpanded ? Icons.expand_less : Icons.expand_more,
                   color: Theme.of(
                     context,
-                  ).colorScheme.shadow.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                  spreadRadius: 0,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ],
             ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _recentActivities.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 1,
-                indent: 20,
-                endIndent: 20,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Content (expandable)
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: _isActivitiesExpanded
+              ? _buildActivitiesContent()
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivitiesContent() {
+    if (_recentActivities.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+              Theme.of(context).colorScheme.surface,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
                 color: Theme.of(
                   context,
-                ).colorScheme.outline.withValues(alpha: 0.1),
+                ).colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
               ),
-              itemBuilder: (context, index) {
-                final activity = _recentActivities[index];
-                return _buildActivityItem(activity);
-              },
+              child: Icon(
+                Icons.history_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
+            const SizedBox(height: 16),
+            Text(
+              'No recent activity yet',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Start adding todos and notes to see your activity here',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
-      ],
+        ],
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _recentActivities.length,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          indent: 20,
+          endIndent: 20,
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
+        itemBuilder: (context, index) {
+          final activity = _recentActivities[index];
+          return _buildActivityItem(activity);
+        },
+      ),
     );
   }
 
@@ -735,6 +843,239 @@ class _HomeScreenState extends State<HomeScreen> {
       return '${difference.inDays}d ago';
     } else {
       return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  Widget _buildRecentDeleted() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with expand/collapse button
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isDeletedExpanded = !_isDeletedExpanded;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  'Recently Deleted',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  _isDeletedExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Content (expandable)
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: _isDeletedExpanded
+              ? _buildDeletedContent()
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeletedContent() {
+    if (_recentDeleted.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.surfaceContainerHighest,
+              Theme.of(context).colorScheme.surface,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.restore_from_trash_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No recently deleted items',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Deleted items will appear here for recovery',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _recentDeleted.length,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          indent: 20,
+          endIndent: 20,
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
+        itemBuilder: (context, index) {
+          final deletedItem = _recentDeleted[index];
+          return _buildDeletedItem(deletedItem);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDeletedItem(Map<String, dynamic> deletedItem) {
+    final isTodo = deletedItem['type'] == 'todo';
+    final color = deletedItem['color'] as Color;
+    final deletedAt = deletedItem['deletedAt'] as DateTime;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          isTodo ? Icons.task_alt_rounded : Icons.description_rounded,
+          color: color,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        deletedItem['title'],
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        'Deleted ${_formatDeletedTime(deletedAt)}',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.restore,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+            onPressed: () {
+              // TODO: Implement restore functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Restore ${isTodo ? 'todo' : 'note'}: ${deletedItem['title']}',
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Restore',
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_forever,
+              color: Theme.of(context).colorScheme.error,
+              size: 20,
+            ),
+            onPressed: () {
+              setState(() {
+                _recentDeleted.removeAt(_recentDeleted.indexOf(deletedItem));
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Item permanently deleted')),
+              );
+            },
+            tooltip: 'Delete Forever',
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDeletedTime(DateTime deletedAt) {
+    final now = DateTime.now();
+    final difference = now.difference(deletedAt);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${deletedAt.day}/${deletedAt.month}/${deletedAt.year}';
     }
   }
 }

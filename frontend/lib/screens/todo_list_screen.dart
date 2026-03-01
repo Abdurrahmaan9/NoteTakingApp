@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/todo.dart';
 import '../services/api_service.dart';
+import '../services/deleted_items_service.dart';
 import 'add_todo_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -30,6 +31,17 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
     try {
       final todos = await ApiService.getTodos();
+
+      // SORTING LOGIC: Incomplete todos at top (newest first), completed at bottom (newest first)
+      todos.sort((a, b) {
+        // If both todos have same completion status, sort by ID (newest first)
+        if (a.completed == b.completed) {
+          return (b.id ?? 0).compareTo(a.id ?? 0);
+        }
+        // Incomplete todos come before completed todos
+        return a.completed ? 1 : -1;
+      });
+
       setState(() {
         _todos = todos;
         _isLoading = false;
@@ -81,6 +93,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
     if (confirmed == true) {
       try {
+        // Add to deleted items service before deleting
+        DeletedItemsService().addDeletedTodo(todo);
+
         await ApiService.deleteTodo(todo.id!);
         if (mounted) {
           _loadTodos();

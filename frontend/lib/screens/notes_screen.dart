@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/notes_api_service.dart';
+import '../services/deleted_items_service.dart';
 import 'add_note_screen.dart';
 import 'edit_note_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -32,6 +33,10 @@ class _NotesScreenState extends State<NotesScreen> {
 
     try {
       final notes = await NotesApiService.getNotes();
+      
+      // SORTING LOGIC: Newest at the top
+      notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
       setState(() {
         _notes = notes;
         _isLoading = false;
@@ -50,16 +55,31 @@ class _NotesScreenState extends State<NotesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Note', style: GoogleFonts.ubuntu(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to delete "${note.title}"?', style: GoogleFonts.ubuntu()),
+        title: Text(
+          'Delete Note',
+          style: GoogleFonts.ubuntu(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${note.title}"?',
+          style: GoogleFonts.ubuntu(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel', style: GoogleFonts.ubuntu(color: Colors.grey)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.ubuntu(color: Colors.grey),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Delete', style: GoogleFonts.ubuntu(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.ubuntu(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -67,11 +87,16 @@ class _NotesScreenState extends State<NotesScreen> {
 
     if (confirmed == true) {
       try {
+        // Add to deleted items service before deleting
+        DeletedItemsService().addDeletedNote(note);
+
         await NotesApiService.deleteNote(note.id!);
         if (mounted) _loadNotes();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error deleting note: $e')));
         }
       }
     }
@@ -95,7 +120,9 @@ class _NotesScreenState extends State<NotesScreen> {
         if (mounted) _loadNotes();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error creating note: $e')));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error creating note: $e')));
         }
       }
     }
@@ -153,7 +180,9 @@ class _NotesScreenState extends State<NotesScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.shadow.withValues(alpha: 0.05),
@@ -178,7 +207,10 @@ class _NotesScreenState extends State<NotesScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -209,7 +241,10 @@ class _NotesScreenState extends State<NotesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Error loading notes', style: GoogleFonts.ubuntu(fontSize: 18)),
+            Text(
+              'Error loading notes',
+              style: GoogleFonts.ubuntu(fontSize: 18),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _loadNotes, child: const Text('Retry')),
           ],
@@ -222,15 +257,25 @@ class _NotesScreenState extends State<NotesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.note_alt_outlined, size: 64, color: Colors.grey.shade300),
+            Icon(
+              Icons.note_alt_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
-            Text('No notes yet', style: GoogleFonts.ubuntu(color: Colors.grey.shade600, fontSize: 18)),
+            Text(
+              'No notes yet',
+              style: GoogleFonts.ubuntu(
+                color: Colors.grey.shade600,
+                fontSize: 18,
+              ),
+            ),
           ],
         ),
       );
     }
 
-return RefreshIndicator(
+    return RefreshIndicator(
       onRefresh: _loadNotes,
       child: GridView.builder(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -308,10 +353,7 @@ class NoteCard extends StatelessWidget {
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: baseColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: baseColor.withValues(alpha: 0.2), width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -358,7 +400,10 @@ class NoteCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: baseColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
@@ -368,7 +413,8 @@ class NoteCard extends StatelessWidget {
                         style: GoogleFonts.ubuntu(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          color: baseColor.darken(), // Custom helper or use baseColor
+                          color: baseColor
+                              .darken(), // Custom helper or use baseColor
                         ),
                       ),
                     ),
@@ -379,7 +425,9 @@ class NoteCard extends StatelessWidget {
                         _formatDate(note.createdAt),
                         style: GoogleFonts.ubuntu(
                           fontSize: 10,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -392,10 +440,17 @@ class NoteCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.delete_outline, size: 16, color: Colors.red.withValues(alpha: 0.7)),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.red.withValues(alpha: 0.7),
+                        ),
                         onPressed: onDelete,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        constraints: const BoxConstraints(
+                          minWidth: 28,
+                          minHeight: 28,
+                        ),
                       ),
                     ),
                   ],
@@ -408,7 +463,7 @@ class NoteCard extends StatelessWidget {
     );
   }
 
-String _formatDate(DateTime date) {
+  String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
 
@@ -416,7 +471,7 @@ String _formatDate(DateTime date) {
     if (difference.inHours < 24) return '${difference.inHours}h ago';
     if (difference.inDays == 1) return 'Yesterday';
     if (difference.inDays < 7) return '${difference.inDays}d ago';
-    
+
     return '${date.day}/${date.month}';
   }
 }
