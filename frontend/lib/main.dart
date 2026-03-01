@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/main_screen.dart';
-import 'theme/app_theme.dart';
+import 'widgets/theme/app_theme.dart';
 
 void main() {
   runApp(const NoteApp());
