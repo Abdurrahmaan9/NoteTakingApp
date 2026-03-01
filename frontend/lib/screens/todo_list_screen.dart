@@ -122,6 +122,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return Scaffold(
       body: _buildBody(),
       floatingActionButton: Container(
+        margin: const EdgeInsets.only(
+          bottom: 80,
+        ), // Add margin to avoid navigation bar
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -266,6 +269,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return RefreshIndicator(
       onRefresh: _loadTodos,
       child: ListView.builder(
+        padding: const EdgeInsets.only(
+          bottom: 100,
+        ), // Add padding for navigation bar
         itemCount: _todos.length,
         itemBuilder: (context, index) {
           final todo = _todos[index];

@@ -114,13 +114,46 @@ class _NotesScreenState extends State<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'notes_fab_unique',
-        onPressed: _addNote,
-        tooltip: 'Add Note',
-        child: const Icon(Icons.add),
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(
+          bottom: 80,
+        ), // Add margin to avoid navigation bar
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.primary.withValues(alpha: 0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.shadow.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          heroTag: 'note_fab_unique',
+          onPressed: _addNote,
+          tooltip: 'Add Note',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Icon(Icons.add, color: theme.colorScheme.onPrimary, size: 28),
+        ),
       ),
     );
   }
@@ -245,7 +278,10 @@ class _NotesScreenState extends State<NotesScreen> {
     return RefreshIndicator(
       onRefresh: _loadNotes,
       child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        padding: const EdgeInsets.only(
+          bottom: 100,
+        ), // Add padding for navigation bar
+        // padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 12.0,
@@ -296,72 +332,75 @@ class NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-        side: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
-      ),
-      child: InkWell(
-        onTap: onEdit,
-        borderRadius: BorderRadius.circular(16.0),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      note.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Card(
+        color: color,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+          side: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
+        ),
+        child: InkWell(
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(16.0),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        note.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D2D2D),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: onDelete,
-                    child: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.black.withOpacity(0.3),
+                    GestureDetector(
+                      onTap: onDelete,
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.black.withOpacity(0.3),
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Content snippet
+                Expanded(
+                  child: Text(
+                    note.content,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withOpacity(0.6),
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // Content snippet
-              Expanded(
-                child: Text(
-                  note.content,
+                ),
+                const SizedBox(height: 4),
+                // Date
+                Text(
+                  _formatDate(note.createdAt),
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black.withOpacity(0.6),
-                    height: 1.2,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black.withOpacity(0.4),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 4),
-              // Date
-              Text(
-                _formatDate(note.createdAt),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black.withOpacity(0.4),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
