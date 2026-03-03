@@ -4,6 +4,7 @@ import '../services/notes_api_service.dart';
 import '../services/deleted_items_service.dart';
 import '../models/todo.dart';
 import '../models/note.dart';
+import '../utils/responsive_breakpoints.dart';
 import 'add_todo_screen.dart';
 import 'add_note_screen.dart';
 
@@ -198,360 +199,688 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     if (_error != null) {
-      return SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
-            bottom: 100.0, // Add padding for bottom navigation
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading stats',
-                  style: Theme.of(context).textTheme.headlineSmall,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding:
+                  ResponsiveBreakpoints.getScreenPadding(
+                    constraints.maxWidth,
+                  ).copyWith(
+                    bottom: 100.0, // Add padding for bottom navigation
+                  ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading stats',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_error!),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadStats,
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(_error!),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadStats,
-                  child: const Text('Retry'),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _loadStats();
-        // Also refresh deleted items after loading stats
-        _refreshDeletedItems();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return RefreshIndicator(
+          onRefresh: () async {
+            await _loadStats();
+            // Also refresh deleted items after loading stats
+            _refreshDeletedItems();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding:
+                ResponsiveBreakpoints.getScreenPadding(
+                  constraints.maxWidth,
+                ).copyWith(
+                  bottom: 120.0, // Add padding for bottom navigation
+                ),
+            child: _buildAdaptiveLayout(constraints.maxWidth),
+          ),
+        );
       },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.only(
-          left: 20.0,
-          right: 20.0,
-          top: 24.0,
-          bottom: 120.0, // Add padding for bottom navigation
+    );
+  }
+
+  Widget _buildAdaptiveLayout(double screenWidth) {
+    if (ResponsiveBreakpoints.isMobile(screenWidth)) {
+      return _buildMobileLayout();
+    } else if (ResponsiveBreakpoints.isTablet(screenWidth)) {
+      return _buildTabletLayout();
+    } else {
+      return _buildDesktopLayout();
+    }
+  }
+
+  Widget _buildMobileLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildHeader(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
         ),
-        child: Column(
+
+        // Todo Stats Section
+        _buildStatsSection('Todo Summary', _todoStats),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Note Stats Section
+        _buildStatsSection('Note Summary', _noteStats),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Quick Actions
+        _buildQuickActions(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Recent Activity
+        _buildRecentActivity(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Recently Deleted
+        _buildRecentDeleted(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildHeader(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Stats Sections in a row
+        Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            _buildHeader(),
-            const SizedBox(height: 32),
-
-            // Todo Stats Section
-            _buildStatsSection('Todo Summary', _todoStats),
-            const SizedBox(height: 32),
-
-            // Note Stats Section
-            _buildStatsSection('Note Summary', _noteStats),
-            const SizedBox(height: 32),
-
-            // Quick Actions
-            _buildQuickActions(),
-            const SizedBox(height: 32),
-
-            // Recent Activity
-            _buildRecentActivity(),
-            const SizedBox(height: 24),
-
-            // Recently Deleted
-            _buildRecentDeleted(),
-            const SizedBox(height: 32), // Add extra padding at the bottom
+            Expanded(child: _buildStatsSection('Todo Summary', _todoStats)),
+            SizedBox(
+              width: ResponsiveBreakpoints.getItemSpacing(
+                MediaQuery.of(context).size.width,
+              ),
+            ),
+            Expanded(child: _buildStatsSection('Note Summary', _noteStats)),
           ],
         ),
-      ),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Quick Actions
+        _buildQuickActions(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Activity and Deleted sections in a row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 2, child: _buildRecentActivity()),
+            SizedBox(
+              width: ResponsiveBreakpoints.getItemSpacing(
+                MediaQuery.of(context).size.width,
+              ),
+            ),
+            Expanded(flex: 1, child: _buildRecentDeleted()),
+          ],
+        ),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        _buildHeader(),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+
+        // Main content in 3 columns
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left column - Stats
+            Expanded(
+              flex: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStatsSection('Todo Summary', _todoStats),
+                  SizedBox(
+                    height: ResponsiveBreakpoints.getSectionSpacing(
+                      MediaQuery.of(context).size.width,
+                    ),
+                  ),
+                  _buildStatsSection('Note Summary', _noteStats),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: ResponsiveBreakpoints.getItemSpacing(
+                MediaQuery.of(context).size.width,
+              ),
+            ),
+
+            // Middle column - Quick Actions and Activity
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildQuickActions(),
+                  SizedBox(
+                    height: ResponsiveBreakpoints.getSectionSpacing(
+                      MediaQuery.of(context).size.width,
+                    ),
+                  ),
+                  _buildRecentActivity(),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: ResponsiveBreakpoints.getItemSpacing(
+                MediaQuery.of(context).size.width,
+              ),
+            ),
+
+            // Right column - Deleted Items
+            Expanded(flex: 1, child: _buildRecentDeleted()),
+          ],
+        ),
+        SizedBox(
+          height: ResponsiveBreakpoints.getSectionSpacing(
+            MediaQuery.of(context).size.width,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildHeader() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+        final cardPadding = ResponsiveBreakpoints.getCardPadding(screenWidth);
+
+        return Container(
+          padding: cardPadding,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(
+                  context,
+                ).colorScheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(isMobile ? 8 : 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.home,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: isMobile ? 24 : 28,
+                ),
+              ),
+              SizedBox(width: isMobile ? 16 : 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dashboard',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: ResponsiveBreakpoints.getHeaderFontSize(
+                              screenWidth,
+                            ),
+                          ),
+                    ),
+                    SizedBox(height: isMobile ? 2 : 4),
+                    Text(
+                      'Welcome back! Here\'s your productivity overview.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      maxLines: isMobile ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (!isMobile) ...[
+                const SizedBox(width: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_todoStats.length + _noteStats.length} items',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatsSection(String title, List<Map<String, dynamic>> stats) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final crossAxisCount = ResponsiveBreakpoints.getStatsColumns(
+          screenWidth,
+        );
+        final aspectRatio = ResponsiveBreakpoints.getStatsAspectRatio(
+          screenWidth,
+        );
+        final itemSpacing = ResponsiveBreakpoints.getItemSpacing(screenWidth);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: ResponsiveBreakpoints.getTitleFontSize(screenWidth),
+              ),
+            ),
+            SizedBox(height: itemSpacing),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: itemSpacing,
+                mainAxisSpacing: itemSpacing,
+                childAspectRatio: aspectRatio,
+              ),
+              itemCount: stats.length,
+              itemBuilder: (context, index) {
+                final stat = stats[index];
+                return _buildStatCard(stat, screenWidth);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(Map<String, dynamic> stat, double screenWidth) {
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final cardPadding = EdgeInsets.all(isMobile ? 10 : 12);
+
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: cardPadding,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
+            stat['color'].withValues(alpha: 0.1),
+            stat['color'].withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: stat['color'].withValues(alpha: 0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: stat['color'].withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
             spreadRadius: 0,
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(isMobile ? 10 : 12),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+              color: stat['color'].withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              Icons.home,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
+              stat['icon'],
+              color: stat['color'],
+              size: isMobile ? 20 : 22,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Dashboard',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Welcome back! Here\'s your productivity overview.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
+          SizedBox(height: isMobile ? 6 : 8),
+          Text(
+            '${stat['count']}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: stat['color'],
+              fontSize: isMobile
+                  ? null
+                  : ResponsiveBreakpoints.getTitleFontSize(screenWidth) * 0.7,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
+          SizedBox(height: isMobile ? 1 : 2),
+          Text(
+            stat['title'],
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(
                 context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
+              fontSize: isMobile ? 10 : 11,
             ),
-            child: Text(
-              '${_todoStats.length + _noteStats.length}',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsSection(String title, List<Map<String, dynamic>> stats) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: stats.length,
-          itemBuilder: (context, index) {
-            final stat = stats[index];
-            return Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    stat['color'].withValues(alpha: 0.1),
-                    stat['color'].withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: stat['color'].withValues(alpha: 0.2),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: stat['color'].withValues(alpha: 0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: stat['color'].withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          stat['icon'],
-                          color: stat['color'],
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 40),
-                      Text(
-                        '${stat['count']}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: stat['color'],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    stat['title'],
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Quick Actions',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final itemSpacing = ResponsiveBreakpoints.getItemSpacing(screenWidth);
+        final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _buildQuickActionCard(
-                'Add Todo',
-                Icons.add_task_rounded,
-                Colors.blue,
-                () async {
-                  final result = await Navigator.of(context).push<Todo>(
-                    MaterialPageRoute(
-                      builder: (context) => const AddTodoScreen(),
-                    ),
-                  );
-
-                  if (result != null) {
-                    try {
-                      await ApiService.createTodo(result);
-                      if (mounted) {
-                        _loadStats();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Todo added successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error adding todo: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                },
+            Text(
+              'Quick Actions',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: ResponsiveBreakpoints.getTitleFontSize(screenWidth),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildQuickActionCard(
-                'Add Note',
-                Icons.note_add_rounded,
-                Colors.purple,
-                () async {
-                  final result = await Navigator.of(context).push<Note>(
-                    MaterialPageRoute(
-                      builder: (context) => const AddNoteScreen(),
-                    ),
-                  );
+            SizedBox(height: itemSpacing),
+            if (isMobile)
+              // Mobile: Grid layout like stats (2 columns)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12.0,
+                  mainAxisSpacing: 12.0,
+                  childAspectRatio: 1.2,
+                ),
+                itemCount: 2,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildQuickActionCard(
+                      'Add Todo',
+                      Icons.add_task_rounded,
+                      Colors.blue,
+                      () async {
+                        final result = await Navigator.of(context).push<Todo>(
+                          MaterialPageRoute(
+                            builder: (context) => const AddTodoScreen(),
+                          ),
+                        );
 
-                  if (result != null) {
-                    try {
-                      await NotesApiService.createNote(result);
-                      if (mounted) {
-                        _loadStats();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Note added successfully!'),
-                            backgroundColor: Colors.green,
+                        if (result != null) {
+                          try {
+                            await ApiService.createTodo(result);
+                            if (mounted) {
+                              _loadStats();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Todo added successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error adding todo: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    );
+                  } else {
+                    return _buildQuickActionCard(
+                      'Add Note',
+                      Icons.note_add_rounded,
+                      Colors.purple,
+                      () async {
+                        final result = await Navigator.of(context).push<Note>(
+                          MaterialPageRoute(
+                            builder: (context) => const AddNoteScreen(),
                           ),
                         );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error adding note: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
+
+                        if (result != null) {
+                          try {
+                            await NotesApiService.createNote(result);
+                            if (mounted) {
+                              _loadStats();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Note added successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error adding note: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    );
                   }
                 },
+              )
+            else
+              // Tablet & Desktop: Horizontal layout
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      'Add Todo',
+                      Icons.add_task_rounded,
+                      Colors.blue,
+                      () async {
+                        final result = await Navigator.of(context).push<Todo>(
+                          MaterialPageRoute(
+                            builder: (context) => const AddTodoScreen(),
+                          ),
+                        );
+
+                        if (result != null) {
+                          try {
+                            await ApiService.createTodo(result);
+                            if (mounted) {
+                              _loadStats();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Todo added successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error adding todo: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(width: itemSpacing),
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      'Add Note',
+                      Icons.note_add_rounded,
+                      Colors.purple,
+                      () async {
+                        final result = await Navigator.of(context).push<Note>(
+                          MaterialPageRoute(
+                            builder: (context) => const AddNoteScreen(),
+                          ),
+                        );
+
+                        if (result != null) {
+                          try {
+                            await NotesApiService.createNote(result);
+                            if (mounted) {
+                              _loadStats();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Note added successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error adding note: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -561,51 +890,67 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     Color color,
     VoidCallback onTap,
   ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              color.withValues(alpha: 0.1),
-              color.withValues(alpha: 0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+        final cardPadding = EdgeInsets.all(isMobile ? 8 : 16);
+
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: cardPadding,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.1),
+                  color.withValues(alpha: 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 12 : 20),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
+                  ),
+                  child: Icon(icon, color: color, size: isMobile ? 20 : 32),
+                ),
+                SizedBox(height: isMobile ? 6 : 16),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                    fontSize: isMobile
+                        ? 12
+                        : ResponsiveBreakpoints.getTitleFontSize(screenWidth) *
+                              0.9,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 

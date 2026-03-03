@@ -1,8 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../services/notes_api_service.dart';
 import '../services/deleted_items_service.dart';
+import '../utils/responsive_breakpoints.dart';
 import 'add_note_screen.dart';
 import 'edit_note_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,10 +33,10 @@ class _NotesScreenState extends State<NotesScreen> {
 
     try {
       final notes = await NotesApiService.getNotes();
-      
+
       // SORTING LOGIC: Newest at the top
       notes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      
+
       setState(() {
         _notes = notes;
         _isLoading = false;
@@ -166,137 +166,205 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Widget _buildBody() {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary.withValues(alpha: 0.1),
-                theme.colorScheme.secondary.withValues(alpha: 0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(24),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withValues(alpha: 0.05),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final theme = Theme.of(context);
+
+        return Column(
+          children: [
+            Container(
+              padding: ResponsiveBreakpoints.getCardPadding(screenWidth),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+                    theme.colorScheme.secondary.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Row(
-              children: [
-                Icon(Icons.notes_rounded, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Text(
-                  'Notes',
-                  style: GoogleFonts.ubuntu(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_notes.length}',
-                    style: GoogleFonts.ubuntu(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
+              child: SafeArea(bottom: false, child: _buildHeader(screenWidth)),
+            ),
+            Expanded(child: _buildContent()),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(double screenWidth) {
+    final theme = Theme.of(context);
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+
+    return Row(
+      children: [
+        Icon(
+          Icons.notes_rounded,
+          color: theme.colorScheme.primary,
+          size: isMobile ? 24 : 28,
+        ),
+        SizedBox(width: isMobile ? 12 : 16),
+        Expanded(
+          child: Text(
+            'Notes',
+            style: GoogleFonts.ubuntu(
+              fontSize: ResponsiveBreakpoints.getHeaderFontSize(screenWidth),
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.primary,
             ),
           ),
         ),
-        Expanded(child: _buildContent()),
+        if (!isMobile) const SizedBox(width: 16),
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 10 : 12,
+            vertical: isMobile ? 3 : 4,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '${_notes.length} ${_notes.length == 1 ? 'note' : 'notes'}',
+            style: GoogleFonts.ubuntu(
+              fontSize: isMobile ? 12 : 14,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildContent() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
 
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Error loading notes',
-              style: GoogleFonts.ubuntu(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadNotes, child: const Text('Retry')),
-          ],
-        ),
-      );
-    }
+        if (_isLoading) return const Center(child: CircularProgressIndicator());
 
-    if (_notes.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.note_alt_outlined,
-              size: 64,
-              color: Colors.grey.shade300,
+        if (_error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: ResponsiveBreakpoints.isMobile(screenWidth) ? 48 : 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading notes',
+                  style: GoogleFonts.ubuntu(
+                    fontSize: ResponsiveBreakpoints.getTitleFontSize(
+                      screenWidth,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadNotes,
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No notes yet',
-              style: GoogleFonts.ubuntu(
-                color: Colors.grey.shade600,
-                fontSize: 18,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadNotes,
-      child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12.0,
-          mainAxisSpacing: 12.0,
-          childAspectRatio: 1.1, // Adjusted to fit the extra row of text
-        ),
-        itemCount: _notes.length,
-        itemBuilder: (context, index) {
-          final note = _notes[index];
-          return NoteCard(
-            note: note,
-            onDelete: () => _deleteNote(note),
-            onEdit: () => _editNote(note),
-            baseColor: _getCardColor(index),
           );
-        },
-      ),
+        }
+
+        if (_notes.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.note_alt_outlined,
+                  size: ResponsiveBreakpoints.isMobile(screenWidth) ? 64 : 96,
+                  color: Colors.grey.shade300,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No notes yet',
+                  style: GoogleFonts.ubuntu(
+                    color: Colors.grey.shade600,
+                    fontSize: ResponsiveBreakpoints.getTitleFontSize(
+                      screenWidth,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap the + button to create your first note',
+                  style: GoogleFonts.ubuntu(
+                    color: Colors.grey.shade500,
+                    fontSize: ResponsiveBreakpoints.isMobile(screenWidth)
+                        ? 14
+                        : 16,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: _loadNotes,
+          child: GridView.builder(
+            padding: ResponsiveBreakpoints.getScreenPadding(screenWidth)
+                .copyWith(
+                  top: ResponsiveBreakpoints.getSectionSpacing(screenWidth),
+                  bottom: 120, // Space for FAB
+                ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _getNotesColumns(screenWidth),
+              crossAxisSpacing: ResponsiveBreakpoints.getItemSpacing(
+                screenWidth,
+              ),
+              mainAxisSpacing: ResponsiveBreakpoints.getItemSpacing(
+                screenWidth,
+              ),
+              childAspectRatio: _getNotesAspectRatio(screenWidth),
+            ),
+            itemCount: _notes.length,
+            itemBuilder: (context, index) {
+              final note = _notes[index];
+              return NoteCard(
+                note: note,
+                onDelete: () => _deleteNote(note),
+                onEdit: () => _editNote(note),
+                baseColor: _getCardColor(index),
+                screenWidth: screenWidth,
+              );
+            },
+          ),
+        );
+      },
     );
+  }
+
+  int _getNotesColumns(double screenWidth) {
+    if (ResponsiveBreakpoints.isMobile(screenWidth)) return 2;
+    if (ResponsiveBreakpoints.isTablet(screenWidth)) return 3;
+    return 4;
+  }
+
+  double _getNotesAspectRatio(double screenWidth) {
+    if (ResponsiveBreakpoints.isMobile(screenWidth)) return 1.1;
+    if (ResponsiveBreakpoints.isTablet(screenWidth)) return 1.0;
+    return 0.9;
   }
 
   Color _getCardColor(int index) {
@@ -318,6 +386,7 @@ class NoteCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final Color baseColor;
+  final double screenWidth;
 
   const NoteCard({
     super.key,
@@ -325,11 +394,15 @@ class NoteCard extends StatelessWidget {
     required this.onDelete,
     required this.onEdit,
     required this.baseColor,
+    required this.screenWidth,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final cardPadding = ResponsiveBreakpoints.getCardPadding(screenWidth);
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -361,7 +434,7 @@ class NoteCard extends StatelessWidget {
           onTap: onEdit,
           borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: cardPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -371,7 +444,7 @@ class NoteCard extends StatelessWidget {
                       child: Text(
                         note.title,
                         style: GoogleFonts.ubuntu(
-                          fontSize: 15,
+                          fontSize: isMobile ? 15 : 16,
                           fontWeight: FontWeight.w700,
                           color: theme.colorScheme.onSurface,
                           height: 1.2,
@@ -382,27 +455,27 @@ class NoteCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: isMobile ? 6 : 8),
                 Expanded(
                   child: Text(
                     note.content,
                     style: GoogleFonts.ubuntu(
-                      fontSize: 12,
+                      fontSize: isMobile ? 12 : 13,
                       fontWeight: FontWeight.w400,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       height: 1.3,
                     ),
-                    maxLines: 3,
+                    maxLines: isMobile ? 3 : 4,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isMobile ? 8 : 12),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 6 : 8,
+                        vertical: isMobile ? 2 : 3,
                       ),
                       decoration: BoxDecoration(
                         color: baseColor.withValues(alpha: 0.1),
@@ -411,20 +484,18 @@ class NoteCard extends StatelessWidget {
                       child: Text(
                         'Note',
                         style: GoogleFonts.ubuntu(
-                          fontSize: 9,
+                          fontSize: isMobile ? 9 : 10,
                           fontWeight: FontWeight.w600,
-                          color: baseColor
-                              .darken(), // Custom helper or use baseColor
+                          color: baseColor.darken(),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // NEW: Timestamp
+                    SizedBox(width: isMobile ? 8 : 12),
                     Expanded(
                       child: Text(
                         _formatDate(note.createdAt),
                         style: GoogleFonts.ubuntu(
-                          fontSize: 10,
+                          fontSize: isMobile ? 10 : 11,
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.4,
                           ),
@@ -442,14 +513,14 @@ class NoteCard extends StatelessWidget {
                       child: IconButton(
                         icon: Icon(
                           Icons.delete_outline,
-                          size: 16,
+                          size: isMobile ? 16 : 18,
                           color: Colors.red.withValues(alpha: 0.7),
                         ),
                         onPressed: onDelete,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 28,
-                          minHeight: 28,
+                        constraints: BoxConstraints(
+                          minWidth: isMobile ? 28 : 32,
+                          minHeight: isMobile ? 28 : 32,
                         ),
                       ),
                     ),
